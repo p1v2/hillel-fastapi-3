@@ -23,7 +23,7 @@ async def create_user(username: str, password: str):
 
 async def get_user(username: str) -> UserModel | None:
     async with SessionLocal() as session:
-        return session.execute(select(UserModel).filter(UserModel.username == username)).first()
+        return (await session.execute(select(UserModel).filter(UserModel.username == username))).first()[0]
 
 
 async def authenticate_user(username: str, password: str) -> UserModel | None:

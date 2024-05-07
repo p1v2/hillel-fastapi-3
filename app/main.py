@@ -66,8 +66,8 @@ async def get_products(offset, limit) -> list[ProductModel]:
 @app.get("/products", response_model=PaginatedProductResponse)
 async def read_products(
         current_user: User = Depends(get_current_user),
-        offset=Query(0),
-        limit=Query(10, le=50),
+        offset: int = Query(0),
+        limit: int = Query(10, le=50),
 ):
     products, total = await asyncio.gather(
         get_products(offset, limit),
@@ -78,7 +78,8 @@ async def read_products(
         results=products,
         total=total,
         offset=offset,
-        limit=limit
+        limit=limit,
+        username=current_user.username,
     )
 
 

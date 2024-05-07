@@ -19,6 +19,7 @@ class PaginatedProductResponse(BaseModel):
     total: int
     offset: int
     limit: int
+    username: str
 
 
 class User(BaseModel):
