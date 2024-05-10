@@ -1,0 +1,28 @@
+uvicorn app.main:app --port 8001
+cryptography==3.4.8
+bcrypt==3.2.2
+
+
+
+pip install alembic
+alembic init alembic
+
+                        ######env.py
+
+                        # add your model's MetaData object here
+                        # for 'autogenerate' support
+                        19 from app.database import Base
+
+                        21 target_metadata = Base.metadata
+                        # target_metadata = None
+
+                        #############################
+                        #####    alembic.ini
+                        63 sqlalchemy.url = mysql://root:password@localhost:3306/fastapidb
+
+
+
+alembic revision --autogenerate -m "Add description and quantity columns"
+
+
+alembic upgrade head

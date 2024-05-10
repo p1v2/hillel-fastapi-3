@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from datetime import timedelta, datetime
 
 from jose import jwt
 from sqlalchemy import select
 
-from app.db import SessionLocal
+from app.database import SessionLocal
 from app.models import UserModel
 from app.utils import get_password_hash, verify_password
 
@@ -23,7 +25,11 @@ async def create_user(username: str, password: str):
 
 async def get_user(username: str) -> UserModel | None:
     async with SessionLocal() as session:
-        return session.execute(select(UserModel).filter(UserModel.username == username)).first()
+        # return session.execute(select(UserModel).filter(UserModel.username == username)).first()
+        # return session.execute(select(UserModel).filter(UserModel.username == username))
+        result = await session.execute(select(UserModel).filter(UserModel.username == username))
+        return result.scalar()  # Предполагается, что вы хотите получить один результат
+
 
 
 async def authenticate_user(username: str, password: str) -> UserModel | None:

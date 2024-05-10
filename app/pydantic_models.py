@@ -4,13 +4,15 @@ from pydantic import BaseModel
 class ProductPayload(BaseModel):
     name: str
     price: float
+    description: str
+    quantity: int
 
 
 class Product(ProductPayload):
     id: int
 
     class Config:
-        orm_mode = True
+        # orm_mode = True
         from_attributes = True
 
 
@@ -26,5 +28,5 @@ class User(BaseModel):
     hashed_password: str
 
     class Config:
-        orm_mode = True
+        # orm_mode = True
         from_attributes = True

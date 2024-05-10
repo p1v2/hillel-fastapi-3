@@ -1,21 +1,23 @@
 import asyncio
 from datetime import timedelta
 
+import uvicorn
 from fastapi import FastAPI, Depends, Query, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import models
 from app.auth import SECRET_KEY, ALGORITHM, get_user, authenticate_user, ACCESS_TOKEN_EXPIRE_MINUTES, \
     create_access_token, create_user
-from app.db import SessionLocal
+from app.database import SessionLocal, engine
 from app.models import ProductModel
 from app.pydantic_models import Product, ProductPayload, PaginatedProductResponse, User
 
 from jose import jwt, JWTError
 
 app = FastAPI()
-
+# models.Base.metadata.create_all(bind=engine)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -70,15 +72,15 @@ async def read_products(
         limit=Query(10, le=50),
 ):
     products, total = await asyncio.gather(
-        get_products(offset, limit),
+        get_products(0, 10),
         get_product_total_count()
     )
 
     return PaginatedProductResponse(
         results=products,
         total=total,
-        offset=offset,
-        limit=limit
+        offset=0,
+        limit=10
     )
 
 
@@ -92,6 +94,45 @@ async def create_product(product: ProductPayload, db: AsyncSession = Depends(get
         await session.refresh(product)
 
         return product
+
+
+@app.patch("/products/{product_id}", response_model=Product)
+async def update_product(
+    product_id: int,
+    product_data: ProductPayload,
+    db: AsyncSession = Depends(get_db)
+):
+    async with db as session:
+        product = await session.get(ProductModel, product_id)
+        if product is None:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        for key, value in product_data.dict(exclude_unset=True).items():
+            setattr(product, key, value)
+        
+        await session.commit()
+        await session.refresh(product)
+        return product
+    
+
+
+@app.delete("/products/{product_id}")
+async def delete_product(
+    product_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    async with db as session:
+        product = await session.get(ProductModel, product_id)
+        if product is None:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        session.delete(product)
+        await session.commit()
+
+        return {"message": "Product deleted successfully"}
+
+
+
 
 
 @app.post("/token")
@@ -125,3 +166,7 @@ async def register(form_data: OAuth2PasswordRequestForm = Depends()):
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8001)
