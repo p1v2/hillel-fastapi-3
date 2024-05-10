@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy.orm import declarative_base
 
-from app.db import Base
+from app.database import Base
 
 
 class ProductModel(Base):
@@ -9,6 +10,8 @@ class ProductModel(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     price = Column(Float)
+    description = Column(String)
+    quantity = Column(Integer)
 
 
 class UserModel(Base):
@@ -17,3 +20,4 @@ class UserModel(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
+
