@@ -5,12 +5,13 @@ from fastapi import FastAPI, Depends, Query, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import JSONResponse
 
-from app.auth import SECRET_KEY, ALGORITHM, get_user, authenticate_user, ACCESS_TOKEN_EXPIRE_MINUTES, \
+from .auth import SECRET_KEY, ALGORITHM, get_user, authenticate_user, ACCESS_TOKEN_EXPIRE_MINUTES, \
     create_access_token, create_user
-from app.db import SessionLocal
-from app.models import ProductModel
-from app.pydantic_models import Product, ProductPayload, PaginatedProductResponse, User
+from .db import SessionLocal
+from .models import ProductModel
+from .pydantic_models import Product, ProductPayload, ProductUpdate,PaginatedProductResponse, User
 
 from jose import jwt, JWTError
 
@@ -94,6 +95,46 @@ async def create_product(product: ProductPayload, db: AsyncSession = Depends(get
 
         return product
 
+@app.patch("/products/{product_id}", response_model=ProductPayload)
+async def update_product(product_id: int, product_data: ProductUpdate, db: AsyncSession = Depends(get_db)):
+    async with db as session:
+        # Retrieve the existing product from the database
+        stmt = select(ProductModel).where(ProductModel.id == product_id)
+        result = await session.execute(stmt)
+        existing_product = result.scalars().first()
+
+        if existing_product is None:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        # Update the product with the provided data
+        for field, value in product_data.dict(exclude_unset=True).items():
+            setattr(existing_product, field, value)
+
+        # Commit the changes to the database
+        await session.commit()
+        await session.refresh(existing_product)
+
+    return existing_product
+
+
+@app.delete("/products/{product_id}")
+async def delete_product(product_id: int, db: AsyncSession = Depends(get_db)):
+    async with db as session:
+        # Retrieve the existing product from the database
+        stmt = select(ProductModel).where(ProductModel.id == product_id)
+        result = await session.execute(stmt)
+        existing_product = result.scalars().first()
+
+        if existing_product is None:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        # Delete the product from the database
+        await session.delete(existing_product)
+
+        # Commit the deletion
+        await session.commit()
+
+    return {"message": "Product deleted successfully"}
 
 @app.post("/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):

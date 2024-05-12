@@ -3,9 +3,9 @@ from datetime import timedelta, datetime
 from jose import jwt
 from sqlalchemy import select
 
-from app.db import SessionLocal
-from app.models import UserModel
-from app.utils import get_password_hash, verify_password
+from Fast_Api.app.db import SessionLocal
+from Fast_Api.app.models import UserModel
+from Fast_Api.app.utils import get_password_hash, verify_password
 
 SECRET_KEY = "a very secret key"
 ALGORITHM = "HS256"
