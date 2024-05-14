@@ -1,7 +1,7 @@
 import asyncio
 from datetime import timedelta
 
-from fastapi import FastAPI, Depends, Query, HTTPException
+from fastapi import FastAPI, Depends, Query, HTTPException, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -134,7 +134,8 @@ async def delete_product(product_id: int, db: AsyncSession = Depends(get_db)):
         # Commit the deletion
         await session.commit()
 
-    return {"message": "Product deleted successfully"}
+    return Response(status_code=204), {'message': 'Product deleted'}
+
 
 @app.post("/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
