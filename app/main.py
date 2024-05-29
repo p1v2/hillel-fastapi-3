@@ -1,7 +1,7 @@
 import asyncio
 from datetime import timedelta
 
-from fastapi import FastAPI, Depends, Query, HTTPException
+from fastapi import FastAPI, Depends, Query, HTTPException, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +10,7 @@ from app.auth import SECRET_KEY, ALGORITHM, get_user, authenticate_user, ACCESS_
     create_access_token, create_user
 from app.db import SessionLocal
 from app.models import ProductModel
-from app.pydantic_models import Product, ProductPayload, PaginatedProductResponse, User
+from app.pydantic_models import Product, ProductPayload, ProductUpdatePayload, PaginatedProductResponse, User
 
 from jose import jwt, JWTError
 
@@ -93,6 +93,41 @@ async def create_product(product: ProductPayload, db: AsyncSession = Depends(get
         await session.refresh(product)
 
         return product
+
+
+@app.patch("/products/{product_id}", response_model=Product)
+async def update_product(product_id: int, product_update: ProductUpdatePayload, db: AsyncSession = Depends(get_db)):
+    async with db as session:
+        # Retrieve the product from the database
+        product = await session.get(ProductModel, product_id)
+        if product is None:
+            raise HTTPException(status_code=404, detail="Product not found!")
+
+        # Update the product attributes with the new values
+        for field, value in product_update.dict(exclude_unset=True).items():
+            setattr(product, field, value)
+
+        # Commit the changes to the database
+        await session.commit()
+        # Refresh the product to get the updated values
+        await session.refresh(product)
+
+        return product
+
+
+@app.delete("/products/{product_id}")
+async def delete_product(product_id: int, db: AsyncSession = Depends(get_db)):
+    async with db as session:
+        # Retrieve the product from the database
+        product = await session.get(ProductModel, product_id)
+        if product is None:
+            raise HTTPException(status_code=404, detail="Product not found!")
+
+        # Delete the product from the database
+        await session.delete(product)
+        await session.commit()
+
+        return Response(status_code=204), {"message": "Product deleted successfully!"}
 
 
 @app.post("/token")
