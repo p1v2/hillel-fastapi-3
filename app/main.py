@@ -40,6 +40,40 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 
+@app.patch("/products/{product_id}", response_model=Product)
+async def update_product(product_id: int, product_update: ProductUpdatePayload, db: AsyncSession = Depends(get_db)):
+    async with db as session:
+        # Retrieve the product from the database
+        product = await session.get(ProductModel, product_id)
+        if product is None:
+            raise HTTPException(status_code=404, detail="Product not found!")
+
+        # Update the product attributes with the new values
+        for field, value in product_update.dict(exclude_unset=True).items():
+            setattr(product, field, value)
+
+        # Commit the changes to the database
+        await session.commit()
+        # Refresh the product to get the updated values
+        await session.refresh(product)
+
+        return product
+
+@app.delete("/products/{product_id}")
+async def delete_product(product_id: int, db: AsyncSession = Depends(get_db)):
+    async with db as session:
+        # Retrieve the product from the database
+        product = await session.get(ProductModel, product_id)
+        if product is None:
+            raise HTTPException(status_code=404, detail="Product not found!")
+
+        # Delete the product from the database
+        await session.delete(product)
+        await session.commit()
+
+        return Response(status_code=204), {"message": "Product deleted successfully!"}
+
+
 @app.get("/")
 def hello_world():
     return "Hello, world!"
